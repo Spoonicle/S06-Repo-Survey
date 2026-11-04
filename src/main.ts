@@ -7,16 +7,28 @@ const app = document.querySelector<HTMLElement>("#app")!;
 // here, so state and screen can never disagree.
 const state = {
   soldiers: 0,
+  conscription: 0,
   barracks: 0,
+  factory: 0,
 };
 
-// A Barracks trains 0.5 soldiers per second, forever.
-const BARRACKS_COST = 50;
-const BARRACKS_RATE = 0.5;
+// Upgrade costs in soldiers, one per upgrade type.
+const COSTS = {
+  conscription: 25,
+  barracks: 50,
+  factory: 600,
+};
 
-// Soldiers per second from all sources.
+// What each owned upgrade contributes.
+const RATES = { barracks: 0.5, factory: 4 };
+
+// Soldiers gained per click and per second from all sources.
+function clickPower(): number {
+  return 1 + state.conscription;
+}
+
 function productionRate(): number {
-  return state.barracks * BARRACKS_RATE;
+  return state.barracks * RATES.barracks + state.factory * RATES.factory;
 }
 
 const title = document.createElement("h1");
@@ -26,35 +38,57 @@ const counter = document.createElement("p");
 counter.textContent = `Soldiers: ${state.soldiers}`;
 
 const rateLine = document.createElement("p");
-rateLine.textContent = "Recruitment: 0 soldiers/sec";
+rateLine.textContent =
+  `Per click: ${clickPower()} soldier - Recruitment: ${productionRate()}/sec`;
 
 const recruit = document.createElement("button");
 recruit.textContent = "Recruit Soldier";
 recruit.addEventListener("click", () => {
-  state.soldiers += 1;
+  state.soldiers += clickPower();
 });
 
-const barracks = document.createElement("button");
-barracks.textContent = `Build Barracks (cost: ${BARRACKS_COST} soldiers)`;
-barracks.addEventListener("click", () => {
-  // Unaffordable purchases are prevented before state changes.
-  if (state.soldiers < BARRACKS_COST) return;
-  state.soldiers -= BARRACKS_COST;
-  state.barracks += 1;
-});
+// Each upgrade gets a button showing its cost and how many are owned.
+type UpgradeKey = keyof typeof COSTS;
+const UPGRADE_INFO: Array<{ key: UpgradeKey; label: string }> = [
+  { key: "conscription", label: "Conscription Drive" },
+  { key: "barracks", label: "Barracks" },
+  { key: "factory", label: "War Factory" },
+];
 
-app.append(title, counter, rateLine, recruit, barracks);
+const upgradeButtons = new Map<UpgradeKey, HTMLButtonElement>();
+const upgradeList = document.createElement("ul");
+
+for (const info of UPGRADE_INFO) {
+  const button = document.createElement("button");
+  const item = document.createElement("li");
+  button.addEventListener("click", () => {
+    if (state.soldiers < COSTS[info.key]) return;
+    state.soldiers -= COSTS[info.key];
+    state[info.key] += 1;
+  });
+  item.append(button);
+  upgradeList.append(item);
+  upgradeButtons.set(info.key, button);
+}
+
+function refreshUpgrades(): void {
+  for (const info of UPGRADE_INFO) {
+    const button = upgradeButtons.get(info.key)!;
+    button.textContent = `${info.label} (owned: ${state[info.key]}) - cost: ${
+      COSTS[info.key]
+    }`;
+    button.disabled = state.soldiers < COSTS[info.key];
+  }
+}
+
+app.append(title, counter, rateLine, recruit, upgradeList);
 
 // Progress survives reloads. Saving rides the existing frame loop every
 // 10 seconds and the pagehide event, so no extra timer ever exists.
 const SAVE_KEY = "galactic-conquest-save";
 
 function save(): void {
-  const data = {
-    soldiers: Math.floor(state.soldiers),
-    barracks: state.barracks,
-  };
-  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
 }
 
 function load(): void {
@@ -62,8 +96,12 @@ function load(): void {
   if (raw === null) return;
   try {
     const data = JSON.parse(raw) as Partial<typeof state>;
-    if (typeof data.soldiers === "number") state.soldiers = data.soldiers;
-    if (typeof data.barracks === "number") state.barracks = data.barracks;
+    for (const key of Object.keys(state) as Array<keyof typeof state>) {
+      const value = data[key];
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        state[key] = value;
+      }
+    }
   } catch {
     // A corrupted save is ignored; the game starts fresh instead.
   }
@@ -82,8 +120,9 @@ function frame(now: number): void {
   last = now;
   state.soldiers += productionRate() * dt;
   counter.textContent = `Soldiers: ${Math.floor(state.soldiers)}`;
-  rateLine.textContent = `Recruitment: ${productionRate()} soldiers/sec`;
-  barracks.disabled = state.soldiers < BARRACKS_COST;
+  rateLine.textContent =
+    `Per click: ${clickPower()} soldier - Recruitment: ${productionRate()}/sec`;
+  refreshUpgrades();
   secondsSinceSave += dt;
   if (secondsSinceSave >= 10) {
     secondsSinceSave = 0;
