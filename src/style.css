@@ -77,10 +77,31 @@ button {
   border: none;
   border-radius: 12px;
   cursor: pointer;
+  position: relative;
 }
 
 .big-button:active {
   transform: scale(0.97);
+}
+
+.floater {
+  position: absolute;
+  top: -6px;
+  color: #ffd98a;
+  font-weight: 600;
+  pointer-events: none;
+  animation: floater-rise 0.9s ease-out forwards;
+}
+
+@keyframes floater-rise {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-42px);
+  }
 }
 
 .card {

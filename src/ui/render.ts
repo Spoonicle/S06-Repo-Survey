@@ -19,17 +19,19 @@ export interface GameActions {
   reset(): void;
 }
 
-// Compact number display: 1.5K, 3.2M, 7.8B, and so on. Exported because
+// Compact number display: 1.5K, 3.2M, 7.8B, and so on. Values beyond
+// the named ladder fall back to exponential notation. Exported because
 // the wiring layer composes the welcome-back message from it.
 export function compact(n: number): string {
   if (n < 1000) return String(Math.floor(n));
-  const units = ["K", "M", "B", "T", "Qa"];
+  const units = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No"];
   let value = n;
   let unit = -1;
   while (value >= 1000 && unit < units.length - 1) {
     value /= 1000;
     unit += 1;
   }
+  if (value >= 1000) return n.toExponential(2);
   return `${value.toFixed(2)}${units[unit]}`;
 }
 
@@ -55,6 +57,17 @@ function describeBonus(bonus: UpgradeBonus): string {
   if (bonus.passive) parts.push(`+${bonus.passive} soldiers/sec`);
   if (bonus.multiplier) parts.push(`x${bonus.multiplier} recruitment`);
   return parts.join(", ");
+}
+
+// Event-driven feedback, not part of the per-frame refresh: a short
+// "+N" rises from the button and removes itself when the CSS says so.
+function spawnFloater(anchor: HTMLElement, text: string): void {
+  const floater = document.createElement("span");
+  floater.className = "floater";
+  floater.textContent = text;
+  floater.style.left = `${35 + Math.random() * 30}%`;
+  anchor.append(floater);
+  floater.addEventListener("animationend", () => floater.remove());
 }
 
 interface Card {
@@ -164,7 +177,10 @@ export function createUI(
   const label = document.createElement("span");
   label.textContent = "Recruit Soldier";
   recruit.append(icon, label);
-  recruit.addEventListener("click", () => actions.recruit());
+  recruit.addEventListener("click", () => {
+    actions.recruit();
+    spawnFloater(recruit, `+${compact(logic.clickPower(state, UPGRADES))}`);
+  });
 
   const upgradesHeading = document.createElement("h2");
   upgradesHeading.textContent = "Recruitment";
