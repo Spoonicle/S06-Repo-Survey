@@ -1,20 +1,25 @@
-// Vite turns this import into a production-safe URL. Keep it as a file so
-// even this tiny example demonstrates a separately deployed asset.
-// @deno-types="./asset-url.d.ts"
-import tileUrl from "./assets/tile.svg?no-inline";
+// Galactic Conquest: a Cookie Clicker-style incremental game.
+// Recruit soldiers by clicking, grow your war machine, conquer the galaxy.
 
 const app = document.querySelector<HTMLElement>("#app")!;
 
-const heading = document.createElement("h1");
-heading.textContent = "D1 project";
+// The single source of truth for the game. The display always reads from
+// here, so state and screen can never disagree.
+const state = {
+  soldiers: 0,
+};
 
-const image = document.createElement("img");
-image.src = tileUrl;
-image.alt = "A teal tile with a cream circle";
-image.width = 96;
-image.height = 96;
+const title = document.createElement("h1");
+title.textContent = "Galactic Conquest";
 
-const message = document.createElement("p");
-message.textContent = "Your project starts here.";
+const counter = document.createElement("p");
+counter.textContent = `Soldiers: ${state.soldiers}`;
 
-app.append(heading, image, message);
+const recruit = document.createElement("button");
+recruit.textContent = "Recruit Soldier";
+recruit.addEventListener("click", () => {
+  state.soldiers += 1;
+  counter.textContent = `Soldiers: ${state.soldiers}`;
+});
+
+app.append(title, counter, recruit);
