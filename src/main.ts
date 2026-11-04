@@ -45,6 +45,35 @@ barracks.addEventListener("click", () => {
 
 app.append(title, counter, rateLine, recruit, barracks);
 
+// Progress survives reloads. Saving rides the existing frame loop every
+// 10 seconds and the pagehide event, so no extra timer ever exists.
+const SAVE_KEY = "galactic-conquest-save";
+
+function save(): void {
+  const data = {
+    soldiers: Math.floor(state.soldiers),
+    barracks: state.barracks,
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
+
+function load(): void {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (raw === null) return;
+  try {
+    const data = JSON.parse(raw) as Partial<typeof state>;
+    if (typeof data.soldiers === "number") state.soldiers = data.soldiers;
+    if (typeof data.barracks === "number") state.barracks = data.barracks;
+  } catch {
+    // A corrupted save is ignored; the game starts fresh instead.
+  }
+}
+
+load();
+addEventListener("pagehide", save);
+
+let secondsSinceSave = 0;
+
 // Growth runs on elapsed seconds, not frame counts, so production is
 // identical at 30, 60, or 144 fps and never counted twice.
 let last = performance.now();
@@ -55,6 +84,11 @@ function frame(now: number): void {
   counter.textContent = `Soldiers: ${Math.floor(state.soldiers)}`;
   rateLine.textContent = `Recruitment: ${productionRate()} soldiers/sec`;
   barracks.disabled = state.soldiers < BARRACKS_COST;
+  secondsSinceSave += dt;
+  if (secondsSinceSave >= 10) {
+    secondsSinceSave = 0;
+    save();
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
