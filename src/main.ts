@@ -13,14 +13,25 @@ import {
   buyUpgrade,
   clickPower,
   conquerPlanet,
+  offlineGains,
   productionRate,
 } from "./game/logic.ts";
 import { loadGame, saveGame } from "./game/persistence.ts";
 import { createState } from "./game/state.ts";
-import { createUI } from "./ui/render.ts";
+import { compact, createUI } from "./ui/render.ts";
 
 const state = createState();
-loadGame(state);
+const awaySeconds = loadGame(state);
+const awayGains = offlineGains(state, UPGRADES, PLANETS, awaySeconds);
+state.soldiers += awayGains;
+
+// Absence is always credited, but only a meaningful absence is worth a
+// welcome-back banner.
+const welcomeBack = awaySeconds >= 60 && awayGains >= 1
+  ? `While you were away, your war machine recruited ${
+    compact(awayGains)
+  } soldiers.`
+  : undefined;
 
 const ui = createUI(
   document.querySelector<HTMLElement>("#app")!,
@@ -36,6 +47,7 @@ const ui = createUI(
       conquerPlanet(state, def);
     },
   },
+  welcomeBack,
 );
 ui.refresh();
 

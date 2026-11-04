@@ -8,6 +8,8 @@ import {
   buyUpgrade,
   conquerPlanet,
   isGalaxyConquered,
+  MAX_OFFLINE_SECONDS,
+  offlineGains,
   productionRate,
   upgradeCost,
 } from "./logic.ts";
@@ -80,4 +82,16 @@ Deno.test("victory requires every planet", () => {
   assertEquals(isGalaxyConquered(state, PLANETS), true);
   delete state.conquered[PLANETS[PLANETS.length - 1].id];
   assertEquals(isGalaxyConquered(state, PLANETS), false);
+});
+
+Deno.test("offline gains pay for elapsed time and cap at one day", () => {
+  const state = createState();
+  state.owned["barracks"] = 1; // 0.5 soldiers per second.
+  assertEquals(offlineGains(state, UPGRADES, PLANETS, 0), 0);
+  assertEquals(offlineGains(state, UPGRADES, PLANETS, -5), 0);
+  assertEquals(offlineGains(state, UPGRADES, PLANETS, 3600), 1_800);
+  assertEquals(
+    offlineGains(state, UPGRADES, PLANETS, Number.MAX_SAFE_INTEGER),
+    0.5 * MAX_OFFLINE_SECONDS,
+  );
 });

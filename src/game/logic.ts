@@ -67,6 +67,21 @@ export function productionRate(
   return passiveRate(state, upgrades) * multiplier;
 }
 
+/** Longest absence whose production is credited when the page reopens. */
+export const MAX_OFFLINE_SECONDS = 24 * 60 * 60;
+
+/** Soldiers produced while the page was closed; capped at one day. */
+export function offlineGains(
+  state: GameState,
+  upgrades: UpgradeDef[],
+  planets: PlanetDef[],
+  elapsedSeconds: number,
+): number {
+  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0) return 0;
+  const elapsed = Math.min(elapsedSeconds, MAX_OFFLINE_SECONDS);
+  return productionRate(state, upgrades, planets) * elapsed;
+}
+
 export function isGalaxyConquered(
   state: GameState,
   planets: PlanetDef[],

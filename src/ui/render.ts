@@ -18,8 +18,9 @@ export interface GameActions {
   conquer(def: PlanetDef): void;
 }
 
-// Compact number display: 1.5K, 3.2M, 7.8B, and so on.
-function compact(n: number): string {
+// Compact number display: 1.5K, 3.2M, 7.8B, and so on. Exported because
+// the wiring layer composes the welcome-back message from it.
+export function compact(n: number): string {
   if (n < 1000) return String(Math.floor(n));
   const units = ["K", "M", "B", "T", "Qa"];
   let value = n;
@@ -141,12 +142,18 @@ export function createUI(
   root: HTMLElement,
   state: GameState,
   actions: GameActions,
+  welcomeBack?: string,
 ): { refresh(): void } {
   const title = document.createElement("h1");
   title.textContent = "Galactic Conquest";
 
   const stats = document.createElement("p");
   stats.className = "stats";
+
+  const welcome = document.createElement("p");
+  welcome.className = "notice";
+  welcome.hidden = welcomeBack === undefined;
+  if (welcomeBack !== undefined) welcome.textContent = welcomeBack;
 
   const recruit = document.createElement("button");
   recruit.className = "big-button";
@@ -180,6 +187,7 @@ export function createUI(
   root.append(
     title,
     stats,
+    welcome,
     recruit,
     upgradesHeading,
     upgradeList,

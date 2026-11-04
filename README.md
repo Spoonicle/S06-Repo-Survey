@@ -24,7 +24,9 @@ The production build deploys to GitHub Pages on every push to `main`:
   the late-game engine of growth. Conquer all nine worlds and the galaxy
   is yours.
 - Progress saves automatically every 10 seconds and when the page is
-  closed; reloading resumes where you left off.
+  closed; reloading resumes where you left off. While the page is
+  closed your war machine keeps recruiting, and up to 24 hours of
+  production is credited when you return.
 
 ## Run and build
 
