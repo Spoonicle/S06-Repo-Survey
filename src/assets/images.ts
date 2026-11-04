@@ -1,6 +1,7 @@
 // Vite asset imports return URL strings, not file contents; this module
 // maps each game image to its production-safe URL so art survives
-// deployment under any base path.
+// deployment under any base path. Presentation-only: game data never
+// touches asset URLs.
 // @deno-types="../asset-url.d.ts"
 import soldierUrl from "./soldier.svg?no-inline";
 // @deno-types="../asset-url.d.ts"
@@ -22,13 +23,14 @@ import aureliaUrl from "./planet-aurelia.svg?no-inline";
 
 export const SOLDIER_ICON = soldierUrl;
 
+/** Planet id -> card art. */
 export const PLANET_IMAGES: Record<string, string> = {
-  Ferrum: ferrumUrl,
-  Verdant: verdantUrl,
-  Pyros: pyrosUrl,
-  Thalassa: thalassaUrl,
-  Umbra: umbraUrl,
-  Cryos: cryosUrl,
-  Zephyr: zephyrUrl,
-  Aurelia: aureliaUrl,
+  ferrum: ferrumUrl,
+  verdant: verdantUrl,
+  pyros: pyrosUrl,
+  thalassa: thalassaUrl,
+  umbra: umbraUrl,
+  cryos: cryosUrl,
+  zephyr: zephyrUrl,
+  aurelia: aureliaUrl,
 };
