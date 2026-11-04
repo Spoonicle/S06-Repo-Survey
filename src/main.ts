@@ -12,12 +12,24 @@ const state = {
   factory: 0,
 };
 
-// Upgrade costs in soldiers, one per upgrade type.
-const COSTS = {
+// Upgrade pricing: each purchase makes the next one COST_GROWTH times
+// as expensive, so early spending shapes later decisions.
+const BASE_COSTS = {
   conscription: 25,
   barracks: 50,
   factory: 600,
 };
+const COST_GROWTH = {
+  conscription: 1.15,
+  barracks: 1.15,
+  factory: 1.15,
+};
+
+type UpgradeKey = keyof typeof BASE_COSTS;
+
+function upgradeCost(key: UpgradeKey): number {
+  return Math.ceil(BASE_COSTS[key] * COST_GROWTH[key] ** state[key]);
+}
 
 // What each owned upgrade contributes.
 const RATES = { barracks: 0.5, factory: 4 };
@@ -47,8 +59,8 @@ recruit.addEventListener("click", () => {
   state.soldiers += clickPower();
 });
 
-// Each upgrade gets a button showing its cost and how many are owned.
-type UpgradeKey = keyof typeof COSTS;
+// Each upgrade gets a button showing its current cost and how many are
+// owned. Costs escalate, so the label changes as the player buys.
 const UPGRADE_INFO: Array<{ key: UpgradeKey; label: string }> = [
   { key: "conscription", label: "Conscription Drive" },
   { key: "barracks", label: "Barracks" },
@@ -62,8 +74,9 @@ for (const info of UPGRADE_INFO) {
   const button = document.createElement("button");
   const item = document.createElement("li");
   button.addEventListener("click", () => {
-    if (state.soldiers < COSTS[info.key]) return;
-    state.soldiers -= COSTS[info.key];
+    const cost = upgradeCost(info.key);
+    if (state.soldiers < cost) return;
+    state.soldiers -= cost;
     state[info.key] += 1;
   });
   item.append(button);
@@ -74,10 +87,11 @@ for (const info of UPGRADE_INFO) {
 function refreshUpgrades(): void {
   for (const info of UPGRADE_INFO) {
     const button = upgradeButtons.get(info.key)!;
-    button.textContent = `${info.label} (owned: ${state[info.key]}) - cost: ${
-      COSTS[info.key]
-    }`;
-    button.disabled = state.soldiers < COSTS[info.key];
+    const cost = upgradeCost(info.key);
+    button.textContent = `${info.label} (owned: ${
+      state[info.key]
+    }) - cost: ${cost}`;
+    button.disabled = state.soldiers < cost;
   }
 }
 
