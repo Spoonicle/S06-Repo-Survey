@@ -15,8 +15,9 @@ import {
   conquerPlanet,
   offlineGains,
   productionRate,
+  resetGame,
 } from "./game/logic.ts";
-import { loadGame, saveGame } from "./game/persistence.ts";
+import { clearSave, loadGame, saveGame } from "./game/persistence.ts";
 import { createState } from "./game/state.ts";
 import { compact, createUI } from "./ui/render.ts";
 
@@ -45,6 +46,14 @@ const ui = createUI(
     },
     conquer: (def) => {
       conquerPlanet(state, def);
+    },
+    reset: () => {
+      if (
+        !confirm("Abandon this campaign? Every soldier and world is lost.")
+      ) return;
+      resetGame(state);
+      clearSave();
+      ui.refresh();
     },
   },
   welcomeBack,

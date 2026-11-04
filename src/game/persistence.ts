@@ -69,3 +69,8 @@ export function loadGame(state: GameState): number {
     return 0;
   }
 }
+
+/** Remove the stored save; used when a campaign is abandoned. */
+export function clearSave(): void {
+  localStorage.removeItem(SAVE_KEY);
+}

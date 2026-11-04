@@ -16,6 +16,7 @@ export interface GameActions {
   recruit(): void;
   buyUpgrade(def: UpgradeDef): void;
   conquer(def: PlanetDef): void;
+  reset(): void;
 }
 
 // Compact number display: 1.5K, 3.2M, 7.8B, and so on. Exported because
@@ -184,6 +185,12 @@ export function createUI(
   victory.hidden = true;
   victory.textContent = "The galaxy is yours. Every world flies your banner.";
 
+  const reset = document.createElement("button");
+  reset.className = "danger-button";
+  reset.textContent = "Abandon Campaign";
+  reset.title = "Erase all progress and start a fresh galaxy";
+  reset.addEventListener("click", () => actions.reset());
+
   root.append(
     title,
     stats,
@@ -194,6 +201,7 @@ export function createUI(
     galaxyHeading,
     planetList,
     victory,
+    reset,
   );
 
   return {

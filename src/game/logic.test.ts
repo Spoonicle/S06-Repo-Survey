@@ -11,6 +11,7 @@ import {
   MAX_OFFLINE_SECONDS,
   offlineGains,
   productionRate,
+  resetGame,
   upgradeCost,
 } from "./logic.ts";
 import { createState } from "./state.ts";
@@ -94,4 +95,15 @@ Deno.test("offline gains pay for elapsed time and cap at one day", () => {
     offlineGains(state, UPGRADES, PLANETS, Number.MAX_SAFE_INTEGER),
     0.5 * MAX_OFFLINE_SECONDS,
   );
+});
+
+Deno.test("reset clears every record of progress", () => {
+  const state = createState();
+  state.soldiers = 123;
+  state.owned["barracks"] = 2;
+  state.conquered["ferrum"] = true;
+  resetGame(state);
+  assertEquals(state.soldiers, 0);
+  assertEquals(state.owned, {});
+  assertEquals(state.conquered, {});
 });

@@ -27,6 +27,8 @@ The production build deploys to GitHub Pages on every push to `main`:
   closed; reloading resumes where you left off. While the page is
   closed your war machine keeps recruiting, and up to 24 hours of
   production is credited when you return.
+- **Abandon Campaign** — the small red button at the bottom wipes all
+  progress and starts a fresh galaxy, after a confirmation.
 
 ## Run and build
 

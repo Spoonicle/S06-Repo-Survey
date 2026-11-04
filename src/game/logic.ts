@@ -112,3 +112,13 @@ export function conquerPlanet(state: GameState, def: PlanetDef): boolean {
   state.conquered[def.id] = true;
   return true;
 }
+
+/**
+ * Abandon the campaign: every soldier, upgrade, and conquest is lost.
+ * Resets in place so closures holding the state stay valid.
+ */
+export function resetGame(state: GameState): void {
+  state.soldiers = 0;
+  state.owned = {};
+  state.conquered = {};
+}

@@ -135,3 +135,17 @@ button {
   border: 1px solid #ffd98a;
   border-radius: 10px;
 }
+
+.danger-button {
+  margin-top: 24px;
+  padding: 8px 16px;
+  color: #c96f66;
+  background: none;
+  border: 1px solid #5c3030;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  border-color: #c96f66;
+}
