@@ -1,5 +1,6 @@
 // Galactic Conquest: a Cookie Clicker-style incremental game.
-// Recruit soldiers by clicking, grow your war machine, conquer the galaxy.
+// Recruit soldiers, grow your war machine, and conquer every planet in
+// the galaxy.
 
 const app = document.querySelector<HTMLElement>("#app")!;
 
@@ -10,6 +11,7 @@ const state = {
   conscription: 0,
   barracks: 0,
   factory: 0,
+  conquered: {} as Record<string, boolean>,
 };
 
 // Upgrade pricing: each purchase makes the next one COST_GROWTH times
@@ -34,24 +36,107 @@ function upgradeCost(key: UpgradeKey): number {
 // What each owned upgrade contributes.
 const RATES = { barracks: 0.5, factory: 4 };
 
+// The galaxy to conquer. Each planet multiplies recruitment once taken,
+// so conquest is itself the late-game engine of growth.
+const PLANETS = [
+  {
+    name: "Ferrum",
+    description: "An iron-rich mining world stripped bare by foundries.",
+    cost: 1_000,
+    multiplier: 1.2,
+  },
+  {
+    name: "Verdant",
+    description: "Jungles that hide grain silos enough to feed legions.",
+    cost: 10_000,
+    multiplier: 1.2,
+  },
+  {
+    name: "Pyros",
+    description: "Volcanic forges that never cool, day or night.",
+    cost: 100_000,
+    multiplier: 1.25,
+  },
+  {
+    name: "Thalassa",
+    description: "An ocean world whose tides carry troop barges.",
+    cost: 1e6,
+    multiplier: 1.25,
+  },
+  {
+    name: "Umbra",
+    description: "A lightless world where recruits train unseen.",
+    cost: 1e7,
+    multiplier: 1.3,
+  },
+  {
+    name: "Cryos",
+    description: "Glacier fortresses drilled into ancient ice.",
+    cost: 1e8,
+    multiplier: 1.3,
+  },
+  {
+    name: "Zephyr",
+    description: "Storm-wrapped skies that test the finest pilots.",
+    cost: 1e9,
+    multiplier: 1.35,
+  },
+  {
+    name: "Aurelia",
+    description: "The gilded core world. Take it and the galaxy is won.",
+    cost: 1e10,
+    multiplier: 1.5,
+  },
+];
+
 // Soldiers gained per click and per second from all sources.
 function clickPower(): number {
   return 1 + state.conscription;
 }
 
-function productionRate(): number {
+function passiveRate(): number {
   return state.barracks * RATES.barracks + state.factory * RATES.factory;
+}
+
+function conquestMultiplier(): number {
+  let multiplier = 1;
+  for (const planet of PLANETS) {
+    if (state.conquered[planet.name]) multiplier *= planet.multiplier;
+  }
+  return multiplier;
+}
+
+function productionRate(): number {
+  return passiveRate() * conquestMultiplier();
+}
+
+function isGalaxyConquered(): boolean {
+  return PLANETS.every((planet) => state.conquered[planet.name]);
+}
+
+// Compact number display: 1.5K, 3.2M, 7.8B, and so on.
+function fmt(n: number): string {
+  if (n < 1000) return String(Math.floor(n));
+  const units = ["K", "M", "B", "T", "Qa"];
+  let value = n;
+  let unit = -1;
+  while (value >= 1000 && unit < units.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+  return `${value.toFixed(2)}${units[unit]}`;
 }
 
 const title = document.createElement("h1");
 title.textContent = "Galactic Conquest";
 
 const counter = document.createElement("p");
-counter.textContent = `Soldiers: ${state.soldiers}`;
+counter.textContent = `Soldiers: ${fmt(state.soldiers)}`;
 
 const rateLine = document.createElement("p");
-rateLine.textContent =
-  `Per click: ${clickPower()} soldier - Recruitment: ${productionRate()}/sec`;
+rateLine.textContent = `Per click: ${clickPower()} soldier - Recruitment: ${
+  fmt(productionRate())
+}/sec`;
 
 const recruit = document.createElement("button");
 recruit.textContent = "Recruit Soldier";
@@ -88,14 +173,52 @@ function refreshUpgrades(): void {
   for (const info of UPGRADE_INFO) {
     const button = upgradeButtons.get(info.key)!;
     const cost = upgradeCost(info.key);
-    button.textContent = `${info.label} (owned: ${
-      state[info.key]
-    }) - cost: ${cost}`;
+    button.textContent = `${info.label} (owned: ${state[info.key]}) - cost: ${
+      fmt(cost)
+    }`;
     button.disabled = state.soldiers < cost;
   }
 }
 
-app.append(title, counter, rateLine, recruit, upgradeList);
+// Each planet is a war goal: pay its cost in soldiers to conquer it and
+// multiply all recruitment from then on.
+const planetButtons = new Map<string, HTMLButtonElement>();
+const planetList = document.createElement("ul");
+
+for (const planet of PLANETS) {
+  const button = document.createElement("button");
+  button.textContent = `${planet.name} - ${fmt(planet.cost)} soldiers`;
+  button.title = planet.description;
+  button.addEventListener("click", () => {
+    if (state.conquered[planet.name] || state.soldiers < planet.cost) return;
+    state.soldiers -= planet.cost;
+    state.conquered[planet.name] = true;
+  });
+  const item = document.createElement("li");
+  item.append(button);
+  planetList.append(item);
+  planetButtons.set(planet.name, button);
+}
+
+function refreshPlanets(): void {
+  for (const planet of PLANETS) {
+    const button = planetButtons.get(planet.name)!;
+    if (state.conquered[planet.name]) {
+      button.textContent =
+        `${planet.name} - conquered (recruitment x${planet.multiplier})`;
+      button.disabled = true;
+    } else {
+      button.textContent = `${planet.name} - ${fmt(planet.cost)} soldiers`;
+      button.disabled = state.soldiers < planet.cost;
+    }
+  }
+}
+
+const victory = document.createElement("p");
+victory.hidden = true;
+victory.textContent = "The galaxy is yours. Every world flies your banner.";
+
+app.append(title, counter, rateLine, recruit, upgradeList, planetList, victory);
 
 // Progress survives reloads. Saving rides the existing frame loop every
 // 10 seconds and the pagehide event, so no extra timer ever exists.
@@ -110,10 +233,19 @@ function load(): void {
   if (raw === null) return;
   try {
     const data = JSON.parse(raw) as Partial<typeof state>;
-    for (const key of Object.keys(state) as Array<keyof typeof state>) {
+    for (
+      const key of ["soldiers", "conscription", "barracks", "factory"] as const
+    ) {
       const value = data[key];
       if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
         state[key] = value;
+      }
+    }
+    if (typeof data.conquered === "object" && data.conquered !== null) {
+      for (const planet of PLANETS) {
+        if (data.conquered[planet.name] === true) {
+          state.conquered[planet.name] = true;
+        }
       }
     }
   } catch {
@@ -133,10 +265,13 @@ function frame(now: number): void {
   const dt = (now - last) / 1000;
   last = now;
   state.soldiers += productionRate() * dt;
-  counter.textContent = `Soldiers: ${Math.floor(state.soldiers)}`;
-  rateLine.textContent =
-    `Per click: ${clickPower()} soldier - Recruitment: ${productionRate()}/sec`;
+  counter.textContent = `Soldiers: ${fmt(state.soldiers)}`;
+  rateLine.textContent = `Per click: ${clickPower()} soldier - Recruitment: ${
+    fmt(productionRate())
+  }/sec`;
   refreshUpgrades();
+  refreshPlanets();
+  victory.hidden = !isGalaxyConquered();
   secondsSinceSave += dt;
   if (secondsSinceSave >= 10) {
     secondsSinceSave = 0;
