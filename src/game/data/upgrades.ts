@@ -47,4 +47,20 @@ export const UPGRADES: UpgradeDef[] = [
     costGrowth: 1.15,
     bonus: { passive: 4 },
   },
+  {
+    id: "shipyard",
+    name: "Orbital Shipyard",
+    description: "Troop transports roll off the rails into orbit.",
+    baseCost: 8_000,
+    costGrowth: 1.15,
+    bonus: { passive: 30 },
+  },
+  {
+    id: "academy",
+    name: "Officer Academy",
+    description: "Graduates make every regiment march smarter.",
+    baseCost: 20_000,
+    costGrowth: 2.4,
+    bonus: { multiplier: 1.15 },
+  },
 ];

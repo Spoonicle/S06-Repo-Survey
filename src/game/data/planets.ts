@@ -63,6 +63,13 @@ export const PLANETS: PlanetDef[] = [
     multiplier: 1.35,
   },
   {
+    id: "rubicon",
+    name: "Rubicon",
+    description: "A fortress moon guarding the core worlds' gate.",
+    cost: 5e9,
+    multiplier: 1.4,
+  },
+  {
     id: "aurelia",
     name: "Aurelia",
     description: "The gilded core world. Take it and the galaxy is won.",
