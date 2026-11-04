@@ -19,6 +19,8 @@ import cryosUrl from "./planet-cryos.svg?no-inline";
 // @deno-types="../asset-url.d.ts"
 import zephyrUrl from "./planet-zephyr.svg?no-inline";
 // @deno-types="../asset-url.d.ts"
+import rubiconUrl from "./planet-rubicon.svg?no-inline";
+// @deno-types="../asset-url.d.ts"
 import aureliaUrl from "./planet-aurelia.svg?no-inline";
 
 export const SOLDIER_ICON = soldierUrl;
@@ -32,5 +34,6 @@ export const PLANET_IMAGES: Record<string, string> = {
   umbra: umbraUrl,
   cryos: cryosUrl,
   zephyr: zephyrUrl,
+  rubicon: rubiconUrl,
   aurelia: aureliaUrl,
 };
