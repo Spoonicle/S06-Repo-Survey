@@ -2,6 +2,9 @@
 // Recruit soldiers, grow your war machine, and conquer every planet in
 // the galaxy.
 
+import "./style.css";
+import { PLANET_IMAGES, SOLDIER_ICON } from "./assets/images.ts";
+
 const app = document.querySelector<HTMLElement>("#app")!;
 
 // The single source of truth for the game. The display always reads from
@@ -127,36 +130,82 @@ function fmt(n: number): string {
   return `${value.toFixed(2)}${units[unit]}`;
 }
 
+// --- Display -------------------------------------------------------------
+// Elements are created once; per frame only changed text is rewritten.
+
 const title = document.createElement("h1");
 title.textContent = "Galactic Conquest";
 
-const counter = document.createElement("p");
-counter.textContent = `Soldiers: ${fmt(state.soldiers)}`;
-
-const rateLine = document.createElement("p");
-rateLine.textContent = `Per click: ${clickPower()} soldier - Recruitment: ${
-  fmt(productionRate())
-}/sec`;
+const stats = document.createElement("p");
+stats.className = "stats";
+stats.textContent = "Soldiers: 0";
 
 const recruit = document.createElement("button");
-recruit.textContent = "Recruit Soldier";
+recruit.className = "big-button";
+const recruitIcon = document.createElement("img");
+recruitIcon.src = SOLDIER_ICON;
+recruitIcon.alt = "";
+const recruitLabel = document.createElement("span");
+recruitLabel.textContent = "Recruit Soldier";
+recruit.append(recruitIcon, recruitLabel);
 recruit.addEventListener("click", () => {
   state.soldiers += clickPower();
 });
 
-// Each upgrade gets a button showing its current cost and how many are
-// owned. Costs escalate, so the label changes as the player buys.
-const UPGRADE_INFO: Array<{ key: UpgradeKey; label: string }> = [
-  { key: "conscription", label: "Conscription Drive" },
-  { key: "barracks", label: "Barracks" },
-  { key: "factory", label: "War Factory" },
-];
+const upgradesHeading = document.createElement("h2");
+upgradesHeading.textContent = "Recruitment";
+
+const upgradeList = document.createElement("ul");
+
+const planetHeading = document.createElement("h2");
+planetHeading.textContent = "Galaxy";
+
+const planetList = document.createElement("ul");
+
+const victory = document.createElement("p");
+victory.id = "victory";
+victory.hidden = true;
+victory.textContent = "The galaxy is yours. Every world flies your banner.";
+
+app.append(
+  title,
+  stats,
+  recruit,
+  upgradesHeading,
+  upgradeList,
+  planetHeading,
+  planetList,
+  victory,
+);
+
+// Each upgrade gets a card button showing its current cost and how many
+// are owned. Costs escalate, so the label changes as the player buys.
+const UPGRADE_INFO: Array<{ key: UpgradeKey; label: string; detail: string }> =
+  [
+    {
+      key: "conscription",
+      label: "Conscription Drive",
+      detail: "+1 soldier per click",
+    },
+    {
+      key: "barracks",
+      label: "Barracks",
+      detail: "+0.5 soldiers/sec",
+    },
+    {
+      key: "factory",
+      label: "War Factory",
+      detail: "+4 soldiers/sec",
+    },
+  ];
 
 const upgradeButtons = new Map<UpgradeKey, HTMLButtonElement>();
-const upgradeList = document.createElement("ul");
+const upgradeLabels = new Map<UpgradeKey, HTMLSpanElement>();
 
 for (const info of UPGRADE_INFO) {
   const button = document.createElement("button");
+  button.className = "card";
+  const label = document.createElement("span");
   const item = document.createElement("li");
   button.addEventListener("click", () => {
     const cost = upgradeCost(info.key);
@@ -164,18 +213,21 @@ for (const info of UPGRADE_INFO) {
     state.soldiers -= cost;
     state[info.key] += 1;
   });
+  button.append(label);
   item.append(button);
   upgradeList.append(item);
   upgradeButtons.set(info.key, button);
+  upgradeLabels.set(info.key, label);
 }
 
 function refreshUpgrades(): void {
   for (const info of UPGRADE_INFO) {
     const button = upgradeButtons.get(info.key)!;
+    const label = upgradeLabels.get(info.key)!;
     const cost = upgradeCost(info.key);
-    button.textContent = `${info.label} (owned: ${state[info.key]}) - cost: ${
-      fmt(cost)
-    }`;
+    label.textContent = `${info.label} (owned: ${
+      state[info.key]
+    }) - ${info.detail} - cost: ${fmt(cost)}`;
     button.disabled = state.soldiers < cost;
   }
 }
@@ -183,45 +235,50 @@ function refreshUpgrades(): void {
 // Each planet is a war goal: pay its cost in soldiers to conquer it and
 // multiply all recruitment from then on.
 const planetButtons = new Map<string, HTMLButtonElement>();
-const planetList = document.createElement("ul");
+const planetLabels = new Map<string, HTMLSpanElement>();
 
 for (const planet of PLANETS) {
   const button = document.createElement("button");
-  button.textContent = `${planet.name} - ${fmt(planet.cost)} soldiers`;
+  button.className = "card";
   button.title = planet.description;
+  const icon = document.createElement("img");
+  icon.src = PLANET_IMAGES[planet.name];
+  icon.alt = planet.name;
+  const label = document.createElement("span");
+  const item = document.createElement("li");
   button.addEventListener("click", () => {
     if (state.conquered[planet.name] || state.soldiers < planet.cost) return;
     state.soldiers -= planet.cost;
     state.conquered[planet.name] = true;
   });
-  const item = document.createElement("li");
+  button.append(icon, label);
   item.append(button);
   planetList.append(item);
   planetButtons.set(planet.name, button);
+  planetLabels.set(planet.name, label);
 }
 
 function refreshPlanets(): void {
   for (const planet of PLANETS) {
     const button = planetButtons.get(planet.name)!;
+    const label = planetLabels.get(planet.name)!;
     if (state.conquered[planet.name]) {
-      button.textContent =
+      label.textContent =
         `${planet.name} - conquered (recruitment x${planet.multiplier})`;
       button.disabled = true;
+      button.classList.add("conquered");
     } else {
-      button.textContent = `${planet.name} - ${fmt(planet.cost)} soldiers`;
+      label.textContent = `${planet.name} - ${fmt(planet.cost)} soldiers`;
       button.disabled = state.soldiers < planet.cost;
+      button.classList.remove("conquered");
     }
   }
 }
 
-const victory = document.createElement("p");
-victory.hidden = true;
-victory.textContent = "The galaxy is yours. Every world flies your banner.";
-
-app.append(title, counter, rateLine, recruit, upgradeList, planetList, victory);
-
+// --- Persistence ----------------------------------------------------------
 // Progress survives reloads. Saving rides the existing frame loop every
 // 10 seconds and the pagehide event, so no extra timer ever exists.
+
 const SAVE_KEY = "galactic-conquest-save";
 
 function save(): void {
@@ -256,6 +313,8 @@ function load(): void {
 load();
 addEventListener("pagehide", save);
 
+// --- Main loop ------------------------------------------------------------
+
 let secondsSinceSave = 0;
 
 // Growth runs on elapsed seconds, not frame counts, so production is
@@ -265,10 +324,9 @@ function frame(now: number): void {
   const dt = (now - last) / 1000;
   last = now;
   state.soldiers += productionRate() * dt;
-  counter.textContent = `Soldiers: ${fmt(state.soldiers)}`;
-  rateLine.textContent = `Per click: ${clickPower()} soldier - Recruitment: ${
-    fmt(productionRate())
-  }/sec`;
+  stats.textContent = `Soldiers: ${
+    fmt(state.soldiers)
+  } - per click: ${clickPower()} - ${fmt(productionRate())}/sec`;
   refreshUpgrades();
   refreshPlanets();
   victory.hidden = !isGalaxyConquered();
